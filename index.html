@@ -8,16 +8,17 @@
     :root{ --bg:#111; --card:#1b1b1b; --muted:#a9a9a9; --line:#2a2a2a; --warn:#ffcc66; --err:#ff6b6b; }
     body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:#eee; margin:0; padding:18px; }
     h1 { font-size:20px; margin:0 0 14px 0; }
-    .panel { display:grid; grid-template-columns: 340px 1fr; gap:16px; align-items:start; }
+    .panel { display:grid; grid-template-columns: 360px 1fr; gap:16px; align-items:start; }
     .controls, .preview { background:var(--card); padding:14px; border-radius:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
     .controls label { display:block; margin-top:10px; font-size:13px; color:#ddd; }
     .controls small{ display:block; color:var(--muted); margin-top:6px; line-height:1.35; }
-    .controls input[type=range], .controls select, .controls input[type=url] { width:100%; }
+    .controls input[type=range], .controls select { width:100%; }
     .controls input[type=checkbox] { margin-right:8px; transform: translateY(1px); }
     .controls .group{ border-top:1px solid var(--line); padding-top:12px; margin-top:12px; }
     .controls .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
-    .controls select, .controls input[type=url]{ background:#101010; border:1px solid #333; color:#eee; padding:8px 10px; border-radius:10px; outline:none; }
-    .controls input[type=url]::placeholder{ color:#666; }
+    .controls select{
+      background:#101010; border:1px solid #333; color:#eee; padding:8px 10px; border-radius:10px; outline:none;
+    }
     .controls button { margin-top:10px; padding:9px 12px; border-radius:10px; border:none; cursor:pointer; background:#2d7cff; color:white; font-weight:600; }
     .controls button.secondary{ background:#2a2a2a; color:#eee; }
     .controls button:active{ transform: translateY(1px); }
@@ -59,7 +60,7 @@
 
     textarea.template{
       width:100%;
-      min-height:320px;
+      min-height:280px;
       background:#0e0e0e;
       border:1px solid #2b2b2b;
       border-radius:10px;
@@ -80,7 +81,7 @@
     }
   </style>
 
-  <!-- ✅ Import Map：让 addons 内部的 `import "three"` 在纯 HTML 中可用 -->
+  <!-- Import Map：让 addons 内部的 `import "three"` 在纯 HTML 中可用 -->
   <script type="importmap">
     {
       "imports": {
@@ -101,6 +102,14 @@
     <small>拖动滑杆三维视图立刻变化：关键滑杆/勾选都会自动触发更新（无需再点“生成/刷新”）。</small>
 
     <div class="group">
+      <label>贴图分辨率（输出 / 下载清晰度）</label>
+      <select id="outSize">
+        <option value="512">512 × 512（快）</option>
+        <option value="1024" selected>1024 × 1024（推荐）</option>
+        <option value="2048">2048 × 2048（清晰）</option>
+        <option value="4096">4096 × 4096（很清晰/较慢）</option>
+      </select>
+
       <label><input type="checkbox" id="tileable" /> 生成无缝贴图（快速版：Offset + 接缝带模糊混合）</label>
 
       <label><input type="checkbox" id="genBase" checked /> Base Color</label>
@@ -117,12 +126,12 @@
         <option value="sphere">圆球 Sphere</option>
         <option value="box">正方体 Box</option>
         <option value="cylinder">圆柱 Cylinder</option>
-        <option value="plane">平面 Plane</option>
+        <option value="plane">平面 Plane（支持真位移）</option>
       </select>
 
       <label><input type="checkbox" id="directXNormal" /> DirectX 法线（Flip Green / 反转Y）</label>
 
-      <label>HDRI 环境（内置选项：切换即自动加载）</label>
+      <label>HDRI 环境（内置：切换即自动加载）</label>
       <select id="hdri">
         <optgroup label="影棚 / Studio">
           <option value="https://threejs.org/examples/textures/equirectangular/spot1Lux.hdr" selected>Spot1Lux（影棚灯）</option>
@@ -160,7 +169,7 @@
       <label>Height 强度（生成 Height 的对比/深浅）</label>
       <input type="range" id="heightStrength" min="0" max="5" step="0.1" value="1" />
 
-      <label>位移强度（Displacement：实时）</label>
+      <label>位移强度（Displacement：实时，仅 Plane 启用）</label>
       <input type="range" id="dispScale" min="0" max="0.35" step="0.005" value="0.06" />
 
       <label>凹凸强度（Bump：实时）</label>
@@ -181,12 +190,12 @@
       </div>
       <button class="secondary" id="btnDlAll" type="button">下载全部贴图</button>
 
-      <small>说明：拖动滑杆会自动更新 3D 预览；“生成/刷新”保留用于你想手动强制重算时。</small>
+      <small>说明：滑杆/勾选会自动更新。球体“裂口”已修：法线边缘环绕采样 + 预览纹理禁用 mipmaps。</small>
     </div>
 
     <details>
       <summary>📦 Electron 桌面版模板（最小可运行）</summary>
-      <small>要真正“内置 HDRI/离线运行”：把 .hdr 文件放到本地（比如 ./hdri/xxx.hdr），并把下拉框链接改成本地相对路径即可。</small>
+      <small>要离线内置 HDRI：把 .hdr 文件放到本地（比如 ./hdri/xxx.hdr），把下拉框链接改成本地相对路径即可。</small>
       <textarea class="template" readonly>
 目录结构：
   pbr-tool/
@@ -222,25 +231,23 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
       </textarea>
     </details>
 
-    <div id="warnBox">提示：如果你是在某些“在线 HTML 运行器/编辑器内置预览”里运行，
-可能会用 document.write 注入整页，遇到脚本语法错误就会直接黑屏。
-现在已修复所有已知的“字符串真实换行”问题；如仍黑屏，请打开开发者工具看 Console。</div>
+    <div id="warnBox"></div>
   </div>
 
   <div class="preview">
-    <h3>🎥 实时 3D 预览（HDRI IBL + 形体切换 + 真实位移）</h3>
+    <h3>🎥 实时 3D 预览（HDRI IBL + 形体切换）</h3>
     <div id="viewerWrap">
       <div id="viewer"></div>
       <div id="errBox"></div>
     </div>
 
     <div class="maps">
-      <div class="mapCard"><div class="title">BaseColor</div><canvas id="cBase" width="512" height="512"></canvas></div>
-      <div class="mapCard"><div class="title">Normal</div><canvas id="cNormal" width="512" height="512"></canvas></div>
-      <div class="mapCard"><div class="title">Height</div><canvas id="cHeight" width="512" height="512"></canvas></div>
-      <div class="mapCard"><div class="title">Roughness</div><canvas id="cRough" width="512" height="512"></canvas></div>
-      <div class="mapCard"><div class="title">Metallic</div><canvas id="cMetal" width="512" height="512"></canvas></div>
-      <div class="mapCard"><div class="title">AO</div><canvas id="cAO" width="512" height="512"></canvas></div>
+      <div class="mapCard"><div class="title">BaseColor</div><canvas id="cBase" width="1024" height="1024"></canvas></div>
+      <div class="mapCard"><div class="title">Normal</div><canvas id="cNormal" width="1024" height="1024"></canvas></div>
+      <div class="mapCard"><div class="title">Height</div><canvas id="cHeight" width="1024" height="1024"></canvas></div>
+      <div class="mapCard"><div class="title">Roughness</div><canvas id="cRough" width="1024" height="1024"></canvas></div>
+      <div class="mapCard"><div class="title">Metallic</div><canvas id="cMetal" width="1024" height="1024"></canvas></div>
+      <div class="mapCard"><div class="title">AO</div><canvas id="cAO" width="1024" height="1024"></canvas></div>
     </div>
   </div>
 </div>
@@ -251,12 +258,14 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
   import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
   const errBox = document.getElementById('errBox');
+  const warnBox = document.getElementById('warnBox');
+
   function showErr(msg){
     errBox.style.display = 'block';
     errBox.textContent = String(msg || 'Unknown error');
   }
 
-  // ✅ 让黑屏也能看到原因
+  // 让黑屏也能看到原因
   window.addEventListener('error', (e) => {
     try { showErr(`JS Error: ${e.message}\n${e.filename || ''}:${e.lineno || ''}:${e.colno || ''}`); } catch {}
   });
@@ -264,7 +273,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     try { showErr(`Unhandled Promise Rejection: ${e.reason}`); } catch {}
   });
 
-  // ====== 基础：图片上传 ======
+  // ====== 图片上传 ======
   let img = new Image();
   const upload = document.getElementById('upload');
   upload.onchange = e => {
@@ -275,8 +284,8 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     reader.readAsDataURL(file);
   };
 
-  // ====== UI 引用 ======
   const ui = {
+    outSize: document.getElementById('outSize'),
     tileable: document.getElementById('tileable'),
 
     genBase: document.getElementById('genBase'),
@@ -307,8 +316,8 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     btnDlSel: document.getElementById('btnDlSel'),
   };
 
-  // ====== 画布（贴图） ======
-  const SIZE = 512;
+  let SIZE = parseInt(ui.outSize.value, 10) || 1024;
+
   const canvases = {
     base: document.getElementById('cBase'),
     normal: document.getElementById('cNormal'),
@@ -318,22 +327,51 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     ao: document.getElementById('cAO'),
   };
 
-  // 用于运算的隐藏画布
   const work = document.createElement('canvas');
-  work.width = work.height = SIZE;
   const wctx = work.getContext('2d', { willReadFrequently: true });
+
+  function clamp255(v){ return Math.max(0, Math.min(255, v)); }
+  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
 
   function clearAllCanvases(){
     Object.values(canvases).forEach(c=>c.getContext('2d').clearRect(0,0,SIZE,SIZE));
   }
-  function clamp255(v){ return Math.max(0, Math.min(255, v)); }
-  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
 
-  // ====== 无缝（Tileable）快速实现：Offset + Seam Band Blur Blend ======
+  let regenTimer = 0;
+  function scheduleGenerate(ms=80){
+    if (!img.src) return;
+    window.clearTimeout(regenTimer);
+    regenTimer = window.setTimeout(()=>generate(), ms);
+  }
+
+  function setWarn(){
+    warnBox.textContent =
+      `当前贴图分辨率：${SIZE}×${SIZE}（越高越清晰，但生成/3D 更新更慢）。\n` +
+      `已修复球体“裂口”：法线边缘环绕采样 + 预览纹理禁用 mipmaps。\n` +
+      `提示：4K 可能较慢，少数设备 WebGL 最大纹理尺寸不足会报错。`;
+  }
+
+  function applySize(newSize){
+    SIZE = Math.max(64, Math.min(8192, newSize|0));
+
+    // 重设工作画布
+    work.width = work.height = SIZE;
+
+    // 重设输出画布像素分辨率（展示尺寸不变）
+    Object.values(canvases).forEach(c => {
+      c.width = SIZE;
+      c.height = SIZE;
+      c.getContext('2d').clearRect(0,0,SIZE,SIZE);
+    });
+
+    setWarn();
+    scheduleGenerate(0);
+  }
+
+  // ====== 无缝（快速） ======
   function offsetWrap(src, w, h, ox, oy){
     const out = new ImageData(w, h);
-    const s = src.data;
-    const d = out.data;
+    const s = src.data, d = out.data;
     for (let y=0;y<h;y++){
       const sy = (y + oy) % h;
       for (let x=0;x<w;x++){
@@ -419,13 +457,9 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     const blurred = boxBlurRGBA(shifted, w, h, 6);
 
     const out = new ImageData(w, h);
-    const s = shifted.data;
-    const b = blurred.data;
-    const d = out.data;
+    const s = shifted.data, b = blurred.data, d = out.data;
 
-    const cx = halfX;
-    const cy = halfY;
-
+    const cx = halfX, cy = halfY;
     for (let y=0;y<h;y++){
       const dy = Math.abs(y - cy);
       const wy = 1 - clamp01(dy / band);
@@ -448,6 +482,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     wctx.drawImage(img, 0,0,SIZE,SIZE);
 
     let d = wctx.getImageData(0,0,SIZE,SIZE);
+
     const bright = +ui.brightness.value;
     for (let i=0;i<d.data.length;i+=4){
       d.data[i]   = clamp255(d.data[i]   * bright);
@@ -455,10 +490,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
       d.data[i+2] = clamp255(d.data[i+2] * bright);
     }
 
-    if (ui.tileable.checked) {
-      d = makeTileableFast(d, SIZE, SIZE);
-    }
-
+    if (ui.tileable.checked) d = makeTileableFast(d, SIZE, SIZE);
     wctx.putImageData(d,0,0);
   }
 
@@ -470,9 +502,10 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     const ctx = canvases.height.getContext('2d');
     const src = wctx.getImageData(0,0,SIZE,SIZE);
     const out = ctx.createImageData(SIZE,SIZE);
-    const s = +ui.heightStrength.value;
 
+    const s = +ui.heightStrength.value;
     const gamma = Math.max(0.15, 1.0 / (0.6 + s*0.35));
+
     for (let i=0;i<src.data.length;i+=4){
       const v = (src.data[i] + src.data[i+1] + src.data[i+2]) / 3 / 255;
       const h = Math.pow(v, gamma) * 255;
@@ -482,22 +515,30 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     ctx.putImageData(out,0,0);
   }
 
-  function drawNormal(){
-    const ctx = canvases.normal.getContext('2d');
-    const src = wctx.getImageData(0,0,SIZE,SIZE);
-    const out = ctx.createImageData(SIZE,SIZE);
+  // ✅ 修复球体“裂口”：边缘采样采用环绕（tileable=on）或 clamp（off），不再出现边缘法线为0导致黑口子
+  function computeNormalFromGray(srcData, w, h, tileable, nStrength, hStrength){
+    const out = new ImageData(w, h);
 
-    const nStrength = +ui.normalStrength.value;
-    const hStrength = +ui.heightStrength.value;
-    const getH = (idx) => (src.data[idx] + src.data[idx+1] + src.data[idx+2]) / 3;
+    function grayAt(x, y){
+      if (tileable){
+        x = (x % w + w) % w;
+        y = (y % h + h) % h;
+      } else {
+        x = Math.max(0, Math.min(w-1, x));
+        y = Math.max(0, Math.min(h-1, y));
+      }
+      const i = (y*w + x)*4;
+      return (srcData[i] + srcData[i+1] + srcData[i+2]) / 3;
+    }
 
-    for (let y=1;y<SIZE-1;y++){
-      for (let x=1;x<SIZE-1;x++){
-        const i = (y*SIZE+x)*4;
-        const hL = getH(i-4);
-        const hR = getH(i+4);
-        const hU = getH(i-SIZE*4);
-        const hD = getH(i+SIZE*4);
+    for (let y=0;y<h;y++){
+      for (let x=0;x<w;x++){
+        const i = (y*w + x) * 4;
+
+        const hL = grayAt(x-1, y);
+        const hR = grayAt(x+1, y);
+        const hU = grayAt(x, y-1);
+        const hD = grayAt(x, y+1);
 
         let dx = (hR - hL)/255 * hStrength;
         let dy = (hD - hU)/255 * hStrength;
@@ -515,6 +556,18 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
         out.data[i+3] = 255;
       }
     }
+    return out;
+  }
+
+  function drawNormal(){
+    const ctx = canvases.normal.getContext('2d');
+    const src = wctx.getImageData(0,0,SIZE,SIZE);
+    const out = computeNormalFromGray(
+      src.data, SIZE, SIZE,
+      ui.tileable.checked,
+      +ui.normalStrength.value,
+      +ui.heightStrength.value
+    );
     ctx.putImageData(out,0,0);
   }
 
@@ -544,13 +597,6 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
       out.data[i+3] = 255;
     }
     ctx.putImageData(out,0,0);
-  }
-
-  let regenTimer = 0;
-  function scheduleGenerate(ms=80){
-    if (!img.src) return;
-    window.clearTimeout(regenTimer);
-    regenTimer = window.setTimeout(()=>generate(), ms);
   }
 
   function generate(){
@@ -607,10 +653,13 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     el.addEventListener('change', () => scheduleGenerate(90));
   });
 
+  ui.outSize.addEventListener('change', () => applySize(parseInt(ui.outSize.value, 10)));
+  ui.outSize.addEventListener('input',  () => applySize(parseInt(ui.outSize.value, 10)));
+
   // ====== Three.js 预览 ======
   const container = document.getElementById('viewer');
 
-  // WebGL 检测（黑屏常见原因之一）
+  // WebGL 检测
   try {
     const testCanvas = document.createElement('canvas');
     const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
@@ -704,15 +753,24 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
   const tex = { map:null, normal:null, rough:null, metal:null, ao:null, height:null };
 
-  function canvasToTexture(canvas, isColor=false){
+  function disposeTex(t){ if (t) t.dispose(); }
+
+  function canvasToTexture(canvas, isColor=false, tileable=false){
     const t = new THREE.CanvasTexture(canvas);
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+
+    // tileable：Repeat；否则 Clamp
+    t.wrapS = t.wrapT = tileable ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+
+    // ✅ 关键：禁用 mipmaps，避免接缝采样被放大成“裂口”
+    t.generateMipmaps = false;
+    t.minFilter = THREE.LinearFilter;
+    t.magFilter = THREE.LinearFilter;
+
     t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     if (isColor) t.colorSpace = THREE.SRGBColorSpace;
     t.needsUpdate = true;
     return t;
   }
-  function disposeTex(t){ if (t) t.dispose(); }
 
   function applyMaterialParams(){
     renderer.toneMappingExposure = +ui.exposure.value;
@@ -722,6 +780,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
     if (material.normalScale) material.normalScale.set(1, ui.directXNormal.checked ? -1 : 1);
 
+    // 真位移默认只在 Plane 启用（box/cylinder 容易开裂）
     const allowDisplacement = (currentShape === 'plane');
     material.displacementScale = (ui.genHeight.checked && allowDisplacement) ? +ui.dispScale.value : 0;
     material.bumpScale = ui.genHeight.checked ? +ui.bumpScale.value : 0;
@@ -741,7 +800,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
     if (rebuildTextures) {
       if (ui.genBase.checked) {
         disposeTex(tex.map);
-        tex.map = canvasToTexture(canvases.base, true);
+        tex.map = canvasToTexture(canvases.base, true, ui.tileable.checked);
         material.map = tex.map;
         material.color.set(0xffffff);
       } else {
@@ -751,7 +810,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
       if (ui.genNormal.checked) {
         disposeTex(tex.normal);
-        tex.normal = canvasToTexture(canvases.normal, false);
+        tex.normal = canvasToTexture(canvases.normal, false, ui.tileable.checked);
         material.normalMap = tex.normal;
       } else {
         material.normalMap = null;
@@ -759,7 +818,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
       if (ui.genRough.checked) {
         disposeTex(tex.rough);
-        tex.rough = canvasToTexture(canvases.rough, false);
+        tex.rough = canvasToTexture(canvases.rough, false, ui.tileable.checked);
         material.roughnessMap = tex.rough;
       } else {
         material.roughnessMap = null;
@@ -767,7 +826,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
       if (ui.genMetal.checked) {
         disposeTex(tex.metal);
-        tex.metal = canvasToTexture(canvases.metal, false);
+        tex.metal = canvasToTexture(canvases.metal, false, ui.tileable.checked);
         material.metalnessMap = tex.metal;
       } else {
         material.metalnessMap = null;
@@ -775,7 +834,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
       if (ui.genAO.checked) {
         disposeTex(tex.ao);
-        tex.ao = canvasToTexture(canvases.ao, false);
+        tex.ao = canvasToTexture(canvases.ao, false, ui.tileable.checked);
         material.aoMap = tex.ao;
       } else {
         material.aoMap = null;
@@ -783,7 +842,7 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
       if (ui.genHeight.checked) {
         disposeTex(tex.height);
-        tex.height = canvasToTexture(canvases.height, false);
+        tex.height = canvasToTexture(canvases.height, false, ui.tileable.checked);
         material.displacementMap = tex.height;
         material.bumpMap = tex.height;
       } else {
@@ -833,7 +892,6 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
 
     } catch (err) {
       console.warn('HDRI 加载失败：', err);
-      // ✅ 关键修复：禁止字符串里出现真实换行（会导致 SyntaxError/某些 document.write 环境报错）
       alert('HDRI 加载失败（可能跨域/链接不存在/文件太大）。\n请换一个 HDRI 选项。');
     }
   }
@@ -861,7 +919,8 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
   }
   animate();
 
-  // 初始
+  // ====== 初始化 ======
+  applySize(parseInt(ui.outSize.value, 10));  // 先应用分辨率
   setShape(ui.shape.value);
   loadHDRI(ui.hdri.value);
   resize();
@@ -871,20 +930,18 @@ app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(
   function runSelfTests(){
     console.assert(typeof THREE.Scene === 'function', 'SelfTest: THREE.Scene missing');
     console.assert(container instanceof HTMLElement, 'SelfTest: viewer container missing');
-    console.assert(canvases.base.width === 512 && canvases.base.height === 512, 'SelfTest: canvas size not 512');
+    console.assert(canvases.base.width === SIZE && canvases.base.height === SIZE, 'SelfTest: canvas size mismatch');
     console.assert(typeof generate === 'function', 'SelfTest: generate missing');
     console.assert(typeof loadHDRI === 'function', 'SelfTest: loadHDRI missing');
     console.assert(typeof makeTileableFast === 'function', 'SelfTest: makeTileableFast missing');
 
-    // 新增：确保不会把真实换行塞进 JS 字符串
-    const safeMsg = 'HDRI 加载失败（可能跨域/链接不存在/文件太大）。\\n请换一个 HDRI 选项。';
-    console.assert(!safeMsg.includes('\n'), 'SelfTest: safeMsg should contain literal \\n, not a real newline');
-
-    // 新增：无缝函数不抛错、尺寸不变
-    const t = new ImageData(32, 32);
-    for (let i=0;i<t.data.length;i+=4){ t.data[i]=100; t.data[i+1]=120; t.data[i+2]=140; t.data[i+3]=255; }
-    const tiled = makeTileableFast(t, 32, 32);
-    console.assert(tiled.width === 32 && tiled.height === 32, 'SelfTest: tileable size mismatch');
+    // 法线边缘也必须正确（避免球体黑口子）
+    const flat = new ImageData(16,16);
+    for (let i=0;i<flat.data.length;i+=4){ flat.data[i]=128; flat.data[i+1]=128; flat.data[i+2]=128; flat.data[i+3]=255; }
+    const nm = computeNormalFromGray(flat.data, 16, 16, true, 1, 1);
+    console.assert(Math.abs(nm.data[0]-128) <= 2, 'SelfTest: normal R not ~128');
+    console.assert(Math.abs(nm.data[1]-128) <= 2, 'SelfTest: normal G not ~128');
+    console.assert(nm.data[2] >= 250, 'SelfTest: normal B not ~255');
 
     console.info('SelfTest: OK');
   }
